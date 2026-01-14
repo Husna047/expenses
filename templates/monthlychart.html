@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="text-align:center; margin-top:20px;">Monthly Expense Chart</h2>
+
+<!-- Month selector -->
+<form method="POST" style="text-align:center; margin: 16px 0;">
+    <label for="month">Select Month:</label>
+    <select name="month" id="month">
+        {% for m in months %}
+        <option value="{{ m }}" {% if m == selected_month %}selected{% endif %}>{{ m }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit">View</button>
+</form>
+
+<!-- Chart type selector -->
+<div style="text-align:center; margin: 16px 0;">
+    <label for="chartType">Choose chart type:</label>
+    <select id="chartType">
+        <option value="line">Line</option>
+        <option value="bar">Bar</option>
+        <option value="pie">Pie</option>
+        <option value="doughnut">Doughnut</option>
+    </select>
+</div>
+
+<!-- Chart container -->
+<div class="chart-container" style="width:70%; margin:0 auto; background:#fff; padding:20px; border-radius:10px; box-shadow:0 4px 8px rgba(0,0,0,0.1);">
+    <canvas id="expenseChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Generate random colors for each item
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+const colors = {{ labels|tojson }}.map(() => getRandomColor());
+
+// Chart data
+const chartData = {
+    labels: {{ labels|tojson }},
+    datasets: [{
+        label: 'Expense Amount',
+        data: {{ amounts|tojson }},
+        backgroundColor: colors,
+        borderColor: colors,
+        borderWidth: 2,
+        fill: false,
+        tension: 0.3,
+        pointRadius: 5,
+        pointHoverRadius: 7
+    }]
+};
+
+// Chart options
+const chartOptions = {
+    responsive: true,
+    plugins: {
+        title: {
+            display: true,
+            text: 'Expenses for {{ selected_month }}',
+            font: { size: 18 }
+        },
+        legend: {
+            position: 'bottom',
+            labels: { font: { size: 13 } }
+        }
+    },
+    scales: {
+        x: { title: { display: true, text: 'Date (Category)' } },
+        y: { title: { display: true, text: 'Amount (₹)' }, beginAtZero: true }
+    }
+};
+
+// Default chart type
+let currentType = 'line';
+
+// Create chart
+let expenseChart = new Chart(document.getElementById('expenseChart').getContext('2d'), {
+    type: currentType,
+    data: chartData,
+    options: chartOptions
+});
+
+// Change chart type when dropdown changes
+document.getElementById('chartType').addEventListener('change', function() {
+    expenseChart.destroy();
+    currentType = this.value;
+    expenseChart = new Chart(document.getElementById('expenseChart').getContext('2d'), {
+        type: currentType,
+        data: chartData,
+        options: chartOptions
+    });
+});
+</script>
+{% endblock %}
